@@ -1,0 +1,54 @@
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Kiểm tra cấu trúc thư mục (3 file)
+        run: |
+          if [ ! -f index.html ] || [ ! -f style.css ] || [ ! -f script.js ]; then
+            echo "Lỗi: Thiếu file cấu trúc cơ bản!"
+            exit 1
+          fi
+
+      - name: Kiểm tra thẻ <title> trong index.html
+        run: |
+          if ! grep -q "<title>.*</title>" index.html; then
+            echo "Lỗi: index.html thiếu thẻ <title>!"
+            exit 1
+          fi
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
